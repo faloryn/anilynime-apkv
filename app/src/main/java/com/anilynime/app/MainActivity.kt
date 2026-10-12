@@ -18,6 +18,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adapter: AnimeAdapter
     private var currentTab = "latest"
     private var currentPage = 1
+    private var isSearchMode = false
+    private var lastQuery = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,6 +29,7 @@ class MainActivity : AppCompatActivity() {
         setupRecyclerView()
         setupTabs()
         setupSearch()
+        setupPagination()
 
         binding.swipeRefresh.setOnRefreshListener {
             loadAnimeData()
@@ -72,6 +75,8 @@ class MainActivity : AppCompatActivity() {
                 tab?.position?.let { pos ->
                     currentTab = tabs[pos].second
                     currentPage = 1
+                    isSearchMode = false
+                    updatePaginationUI()
                     loadAnimeData()
                 }
             }
@@ -85,7 +90,16 @@ class MainActivity : AppCompatActivity() {
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
                 val query = v.text.toString().trim()
                 if (query.isNotEmpty()) {
+                    isSearchMode = true
+                    lastQuery = query
+                    currentPage = 1
+                    updatePaginationUI()
                     performSearch(query)
+                } else {
+                    isSearchMode = false
+                    currentPage = 1
+                    updatePaginationUI()
+                    loadAnimeData()
                 }
                 true
             } else {
@@ -94,12 +108,55 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupPagination() {
+        binding.btnPrevPage.setOnClickListener {
+            if (currentPage > 1) {
+                currentPage--
+                updatePaginationUI()
+                if (isSearchMode) {
+                    performSearch(lastQuery)
+                } else {
+                    loadAnimeData()
+                }
+                binding.rvAnime.scrollToPosition(0)
+            }
+        }
+
+        binding.btnNextPage.setOnClickListener {
+            currentPage++
+            updatePaginationUI()
+            if (isSearchMode) {
+                performSearch(lastQuery)
+            } else {
+                loadAnimeData()
+            }
+            binding.rvAnime.scrollToPosition(0)
+        }
+
+        updatePaginationUI()
+    }
+
+    private fun updatePaginationUI() {
+        binding.tvCurrentPage.text = "Halaman $currentPage"
+        binding.btnPrevPage.isEnabled = currentPage > 1
+        binding.btnPrevPage.alpha = if (currentPage > 1) 1.0f else 0.4f
+    }
+
     private fun performSearch(query: String) {
         binding.progressBar.visibility = View.VISIBLE
+        binding.swipeRefresh.isRefreshing = false
         lifecycleScope.launch {
             try {
-                val response = ApiClient.instance.getAnimeList(action = "search", query = query)
-                adapter.submitList(response.items ?: emptyList())
+                val response = ApiClient.instance.getAnimeList(
+                    action = "search",
+                    query = query,
+                    page = currentPage
+                )
+                val items = response.items ?: emptyList()
+                adapter.submitList(items)
+                if (items.isEmpty()) {
+                    Toast.makeText(this@MainActivity, "Tidak ada hasil untuk '$query'", Toast.LENGTH_SHORT).show()
+                }
             } catch (e: Exception) {
                 Toast.makeText(this@MainActivity, "Gagal memuat: ${e.message}", Toast.LENGTH_SHORT).show()
             } finally {
@@ -114,8 +171,15 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val response = ApiClient.instance.getAnimeList(action = currentTab, page = currentPage)
-                adapter.submitList(response.items ?: emptyList())
+                val response = ApiClient.instance.getAnimeList(
+                    action = currentTab,
+                    page = currentPage
+                )
+                val items = response.items ?: emptyList()
+                adapter.submitList(items)
+                if (items.isEmpty() && currentPage > 1) {
+                    Toast.makeText(this@MainActivity, "Sudah mencapai halaman terakhir", Toast.LENGTH_SHORT).show()
+                }
             } catch (e: Exception) {
                 Toast.makeText(this@MainActivity, "Gagal memuat anime: ${e.message}", Toast.LENGTH_SHORT).show()
             } finally {
