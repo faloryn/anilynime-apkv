@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Anilynime</string>
+    <string name="tab_latest">Terbaru</string>
+    <string name="tab_donghua">Donghua</string>
+    <string name="tab_movie">Movie</string>
+    <string name="tab_schedule">Jadwal</string>
+    <string name="search_hint">Cari anime atau donghua...</string>
+</resources>

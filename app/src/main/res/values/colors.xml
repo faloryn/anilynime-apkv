@@ -1,0 +1,13 @@
+<resources>
+    <color name="bg_main">#0C0919</color>
+    <color name="bg_card">#16112B</color>
+    <color name="bg_card_selected">#231B44</color>
+    <color name="primary_pink">#FF2A85</color>
+    <color name="primary_purple">#8B5CF6</color>
+    <color name="primary_cyan">#00F2FE</color>
+    <color name="text_primary">#F8FAFC</color>
+    <color name="text_muted">#94A3B8</color>
+    <color name="text_dim">#64748B</color>
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+</resources>
